@@ -64,11 +64,58 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
       return res.send(await handleAlermCommand(req.body));
     }
     if (name === 'request') {
-      return res.send(await handleAlermCommand(req.body));
+      return res.send(await handleRequestCommand(req.body));
     }
 
     console.error(`unknown command: ${name}`);
     return res.status(400).json({ error: 'unknown command' });
+  }
+
+  /**
+   * Handle modal submit requests
+   * See https://discord.com/developers/docs/interactions/message-components#modals
+   */
+  if (type === InteractionType.MODAL_SUBMIT && data.custom_id === 'project_request_modal') {
+    // 입력값 추출
+    const fields = {};
+    for (const row of data.components) {
+      for (const comp of row.components) {
+        fields[comp.custom_id] = comp.value;
+      }
+    }
+
+    // 여기 수정!
+    const guildId = req.body.guild_id;
+    const userId = req.body.member?.user?.id || req.body.user?.id;
+
+    // API 요청 바디 구성
+    const body = {
+      issue_number: Number(fields.issue_number), // 숫자
+      reason: fields.reason,                    // 문자열
+      new_iteration: Number(fields.new_iteration), // 숫자
+      new_assignees: [fields.member_github_name]  // 문자열 배열
+    };
+    
+    // POST /bot 요청
+    const apiRes = await fetch(`${process.env.API_BASE_URL}/bot`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'discord-channel-id': guildId,
+        'Discord-Bot': true
+      },
+      body: JSON.stringify(body)
+    });
+    const apiResult = await apiRes.json();
+
+    // 결과 메시지 반환
+    return res.send({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        content: apiResult?.content?.message || '이슈 변경 요청이 완료되었습니다.'
+        // components: [...] // 필요 없다면 빼세요
+      }
+    });
   }
 
   console.error('unknown interaction type', type);
