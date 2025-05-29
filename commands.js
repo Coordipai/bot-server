@@ -44,6 +44,22 @@ const CHALLENGE_COMMAND = {
   contexts: [0, 2],
 };
 
-const ALL_COMMANDS = [TEST_COMMAND, CHALLENGE_COMMAND];
+const ALERM_COMMAND = {
+  name: 'alerm',
+  description: 'alerm 명령어',
+  type: 1,
+  integration_types: [0, 1],
+  contexts: [0, 1, 2],
+};
+
+const REQUEST_COMMAND = {
+  name: 'request',
+  description: 'request 명령어',
+  type: 1,
+  integration_types: [0, 1],
+  contexts: [0, 1, 2],
+};
+
+const ALL_COMMANDS = [TEST_COMMAND, CHALLENGE_COMMAND, ALERM_COMMAND, REQUEST_COMMAND];
 
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

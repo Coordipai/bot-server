@@ -10,6 +10,8 @@ import {
 } from 'discord-interactions';
 import { getRandomEmoji, DiscordRequest } from './utils.js';
 import { getShuffledOptions, getResult } from './game.js';
+import { handleAlermCommand } from './commands/alerm.js';
+import { handleRequestCommand } from './commands/request.js';
 
 // Create an express app
 const app = express();
@@ -56,6 +58,13 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
           ]
         },
       });
+    }
+    if (name === 'alerm') {
+      // interaction 객체(req.body)를 handleAlermCommand에 전달
+      return res.send(await handleAlermCommand(req.body));
+    }
+    if (name === 'request') {
+      return res.send(await handleAlermCommand(req.body));
     }
 
     console.error(`unknown command: ${name}`);
