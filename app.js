@@ -8,6 +8,7 @@ import {
   MessageComponentTypes,
   verifyKeyMiddleware,
 } from 'discord-interactions';
+import { initScheduler } from './scheduler.js';
 import { getRandomEmoji, DiscordRequest } from './utils.js';
 import { getShuffledOptions, getResult } from './game.js';
 import { handleAlermCommand } from './commands/alerm.js';
@@ -128,4 +129,5 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
 
 app.listen(PORT, () => {
   console.log('Listening on port', PORT);
+  initScheduler(); // Initialize the scheduler
 });
