@@ -12,6 +12,7 @@ import { getRandomEmoji, DiscordRequest } from './utils.js';
 import { getShuffledOptions, getResult } from './game.js';
 import { handleAlermCommand } from './commands/alerm.js';
 import { handleRequestCommand } from './commands/request.js';
+import { handleIssueCommand } from './commands/issue.js';
 
 // Create an express app
 const app = express();
@@ -65,6 +66,9 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
     }
     if (name === 'request') {
       return res.send(await handleRequestCommand(req.body));
+    }
+    if (name === 'issue') {
+      return res.send(await handleIssueCommand(req.body));
     }
 
     console.error(`unknown command: ${name}`);
