@@ -13,7 +13,7 @@ import { getRandomEmoji, DiscordRequest } from './utils.js';
 import { getShuffledOptions, getResult } from './game.js';
 import { handleAlermCommand } from './commands/alerm.js';
 import { handleRequestCommand } from './commands/request.js';
-import { handleIssueCommand } from './commands/issue.js';
+import { handleIssueCommand, sendDailyIssueDM } from './commands/issue.js';
 
 // Create an express app
 const app = express();
@@ -125,6 +125,58 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
 
   console.error('unknown interaction type', type);
   return res.status(400).json({ error: 'unknown interaction type' });
+});
+
+
+// app.post('/projectinfo', (req, res) => {
+//   console.log( 'projet info : ', req.body);
+//   res.send('Post 수신 완료');
+// });
+
+
+app.post('/projectinfo', async (req, res) => {
+  const projectList = req.body.data;
+
+  if (!Array.isArray(projectList)) {
+    return res.status(400).json({ error: 'data must be an array' });
+  }
+
+  try {
+    for (const { discord_channel_id, discord_id } of projectList) {
+      // 1. 프로젝트 정보 가져오기 (필요한 경우)
+      const projectRes = await fetch(`${API_BASE_URL}/bot/project`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'discord-channel-id': discord_channel_id,
+          'discord-user-id': discord_id
+        }
+      });
+      const project = await projectRes.json();
+
+      // 2. 이슈 목록 가져오기
+      const issueRes = await fetch(`${API_BASE_URL}/bot/issues`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'discord-channel-id': discord_channel_id,
+          'discord-user-id': discord_id
+        }
+      });
+      const issues = await issueRes.json();
+
+      // 3. 이슈 필터링 + DM 전송
+      for (const issue of issues) {
+        const assigneeId = issue.assignee?.discord_id;
+        if (assigneeId && assigneeId === discord_id) {
+          await sendDailyIssueDM(discord_id, issue); // DM 전송
+        }
+      }
+    }
+
+    res.status(200).json({ message: '모든 이슈 DM 전송 완료' });
+  } catch (err) {
+    console.error('Error while processing project info:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.listen(PORT, () => {
