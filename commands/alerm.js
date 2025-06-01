@@ -23,7 +23,7 @@ export async function handleAlermCommand(interaction) {
   }
 
   try {
-    const response = await fetch(`${baseUrl}/bot`, {
+    const response = await fetch(`${baseUrl}/bot/issues`, {
       headers: {
         'Content-Type': 'application/json',
         'discord-channel-id': guildId,
