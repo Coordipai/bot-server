@@ -18,9 +18,6 @@ export async function handleIssueCommand(interaction) {
       },
     };
 }
-
-  
-
   try {
     // 1. /bot/project에서 프로젝트 정보 받아오기
     const botProjectRes = await fetch(`${baseUrl}/bot/project`, {
@@ -68,9 +65,6 @@ export async function handleIssueCommand(interaction) {
       }
 
       const included = issueIteration <= parseInt(currentIteration) && !issue.closed;
-
-
-
 
       return included;
     });
@@ -131,23 +125,100 @@ export async function handleIssueCommand(interaction) {
   }
 }
 
-export async function sendDailyIssueDM(discord_id, issue) {
+const createEmbedsFromIssues = (issues) => {
+  return issues.map((issue) => {
+    const repo = issue.repo_fullname || '';
+    const issueNumber = issue.issue_number || '';
+    const issueUrl = `https://github.com/${repo}/issues/${issueNumber}`;
 
-  const content = `📝 **${issue.title}**
-${issue.description || '설명 없음'}
-🔗 링크: ${issue.url || '없음'}
-📅 마감일: ${issue.due_date || '없음'}`;
-
-  // DM 채널 생성
-  const dmChannel = await DiscordRequest(`/users/@me/channels`, {
-    method: 'POST',
-    body: { recipient_id: discord_id }
+    return {
+      title: `📝 ${issue.title || '제목 없음'}`,
+      url: issueUrl,  // 👉 타이틀에 링크 연결
+      description: issue.body || '설명 없음',
+      fields: [
+        {
+          name: '📦 Repository',
+          value: repo || '없음',
+          inline: false
+        },
+        {
+          name: '📅 Iteration (Sprint)',
+          value: `S${issue.iteration ?? '없음'}`,
+          inline: true
+        },
+        {
+          name: '🏷️ Labels',
+          value: issue.labels?.join(', ') || '없음',
+          inline: true
+        },
+        {
+          name: '👥 Assignees',
+          value: issue.assignees?.map(a => a.name || a.github_name).join(', ') || '없음',
+          inline: false
+        }
+      ],
+      footer: {
+        text: `이슈 번호: #${issueNumber || '없음'}`
+      }
+    };
   });
+};
 
-  // DM 메시지 전송
-  await DiscordRequest(`/channels/${dmChannel.id}/messages`, {
-    method: 'POST',
-    body: { content }
-  });
+const sendIssueEmbedsInChunks = async (issues, dmChannel) => {
+  if (!issues?.length) {
+    await DiscordRequest(`/channels/${dmChannel.id}/messages`, {
+      method: 'POST',
+      body: {
+        content: '✅ 현재 할당된 이슈가 없습니다.'
+      }
+    });
+    return;
+  }
+
+  const embeds = createEmbedsFromIssues(issues);
+
+  const chunks = embeds.reduce((acc, embed, i) => {
+    const chunkIndex = Math.floor(i / 10);
+    acc[chunkIndex] = acc[chunkIndex] || [];
+    acc[chunkIndex].push(embed);
+    return acc;
+  }, []);
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const content =
+      chunks.length > 1
+        ? `📦 할당된 이슈 목록입니다 (${i + 1}/${chunks.length})`
+        : '📦 할당된 이슈 목록입니다';
+
+    await DiscordRequest(`/channels/${dmChannel.id}/messages`, {
+      method: 'POST',
+      body: {
+        content,
+        embeds: chunk
+      }
+    });
+  }
+};
+
+export async function sendDailyIssueDM(discord_id, issues) {
+  console.log('📦 DM 전송 시작 - 받은 issues:', issues);
+  if (!issues || !discord_id) {
+    console.error('❗ DM 전송 실패 - 필요한 값이 없음', { issues, discord_id });
+    return;
+  }
+
+  try {
+    // 1. DM 채널 생성
+    const dmRes = await DiscordRequest(`/users/@me/channels`, {
+      method: 'POST',
+      body: { recipient_id: discord_id },
+    });
+    const dmChannel = await dmRes.json();
+
+    // 2. 이슈 목록 전송
+    await sendIssueEmbedsInChunks(issues, dmChannel);
+  } catch (err) {
+    console.error('❗ Discord DM 전송 실패:', err);
+  }
 }
-
