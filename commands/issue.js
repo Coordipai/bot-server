@@ -3,7 +3,6 @@ import { DiscordRequest } from '../utils.js';
 import { calculateIterationFromDate } from '../utils/iteration.js';
 import { calculateIteration } from '../utils/iteration.js';
 
-
 export async function handleIssueCommand(interaction) {
   const baseUrl = process.env.API_BASE_URL;
 
@@ -30,7 +29,7 @@ export async function handleIssueCommand(interaction) {
     });
     const botProjectData = await botProjectRes.json();
     const projectData = botProjectData?.content?.data;
-    console.log('📦 projectData:', JSON.stringify(projectData, null, 2));
+    //console.log('📦 projectData:', JSON.stringify(projectData, null, 2));
 
 
     const projectId = projectData?.id;
@@ -40,7 +39,7 @@ export async function handleIssueCommand(interaction) {
 
 
     // 2. 전체 이슈 요청
-    const response = await fetch(`${baseUrl}/bot/issues`, {
+    const response = await fetch(`${baseUrl}/bot/project/issues`, {
       headers: {
         'Content-Type': 'application/json',
         'discord-channel-id': guildId,
@@ -50,6 +49,7 @@ export async function handleIssueCommand(interaction) {
     });
     const result = await response.json();
     const issues = result?.content?.data || [];
+    //console.log('📦 전체 이슈:', JSON.stringify(issues, null, 2));
 
 
     // 3. 필터: 현재 스프린트 or 지난 스프린트 + 미완료
@@ -70,21 +70,13 @@ export async function handleIssueCommand(interaction) {
     });
 
 
-    // 4. 메시지 구성
-    const message = relevant.length > 0
-      ? relevant.map(issue => {
-          return `#${issue.issue_number} [${issue.repo_fullname}]
-          ${issue.title}
-            🕒 ${issue.closed ? '✅ Closed' : '🟢 Open'}`;
-        }).join('\n\n')
-      : '📭 현재 스프린트 혹은 초과된 이슈가 없습니다.';
-
     // 5. DM 전송
     // ✅ 먼저 디스코드에 즉시 응답
     const ackResponse = {
       type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
     };
       
+    const embeds = createEmbedsFromIssues(relevant);
     // ✅ 이후 DM 전송은 비동기로 따로 수행
     setTimeout(async () => {
       try {
@@ -96,7 +88,8 @@ export async function handleIssueCommand(interaction) {
 
         await DiscordRequest(`/channels/${dmChannel.id}/messages`, {
           method: 'POST',
-          body: { content: message },
+          body: { content: '📬 당신에게 할당된 이슈 목록입니다.',
+                  embeds,},
         });
 
          await DiscordRequest(
@@ -130,11 +123,17 @@ const createEmbedsFromIssues = (issues) => {
     const repo = issue.repo_fullname || '';
     const issueNumber = issue.issue_number || '';
     const issueUrl = `https://github.com/${repo}/issues/${issueNumber}`;
+    const cleanBody = (issue.body || '')
+      .replace(/<!--[\s\S]*?-->/gm, '')        // 멀티라인 HTML 주석 제거
+      .replace(/`+/g, '')                      // 백틱 제거
+      .replace(/^\s*[\r\n]/gm, '')             // 비어 있는 줄 제거
+      .trim();
+
 
     return {
       title: `📝 ${issue.title || '제목 없음'}`,
       url: issueUrl,  // 👉 타이틀에 링크 연결
-      description: issue.body || '설명 없음',
+      description: cleanBody || '설명 없음',
       fields: [
         {
           name: '📦 Repository',
@@ -143,7 +142,7 @@ const createEmbedsFromIssues = (issues) => {
         },
         {
           name: '📅 Iteration (Sprint)',
-          value: `S${issue.iteration ?? '없음'}`,
+          value: `${issue.iteration ?? '없음'}`,
           inline: true
         },
         {
