@@ -108,12 +108,13 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
       headers: {
         'Content-Type': 'application/json',
         'discord-channel-id': guildId,
+        'discord-user-id': userId,
         'Discord-Bot': true
       },
       body: JSON.stringify(body)
     });
     const apiResult = await apiRes.json();
-
+    console.log('API Result:', apiResult);
     // 결과 메시지 반환
     return res.send({
       type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
