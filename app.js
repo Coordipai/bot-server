@@ -170,9 +170,9 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
                   fields: [
                     { name: '프로젝트 명', value: projectName || '-', inline: false },
                     { name: '요청된 이슈 번호', value: String(apiResult?.content?.data.issue_number), inline: true },
+                    { name: '이슈 명', value: apiResult?.content?.data.issue_title, inline: true },
                     { name: '사유', value: apiResult?.content?.data.reason || '-', inline: false },
-                    { name: '추천한 사용자', value: (apiResult?.content?.data.new_assignees || []).join(', ') || '-', inline: true },
-                    { name: '추천한 주기', value: String(apiResult?.content?.data.new_iteration), inline: true }
+                    { name: '추천한 사용자', value: apiResult?.content?.data.requester  || '-', inline: false }
                   ],
                   timestamp: new Date().toISOString()
                 }
