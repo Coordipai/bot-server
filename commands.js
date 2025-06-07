@@ -60,6 +60,15 @@ const REQUEST_COMMAND = {
   contexts: [0, 1, 2],
 };
 
-const ALL_COMMANDS = [TEST_COMMAND, CHALLENGE_COMMAND, ALERM_COMMAND, REQUEST_COMMAND];
+const ISSUE_COMMAND = {
+  name: 'issue',
+  description: '배정된 이슈를 DM으로 받습니다.',
+  type: 1,
+  integration_types: [0, 1],
+  contexts: [0, 1, 2],
+};
+
+const ALL_COMMANDS = [TEST_COMMAND, CHALLENGE_COMMAND, ALERM_COMMAND, REQUEST_COMMAND, ISSUE_COMMAND];
+
 
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);
