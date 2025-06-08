@@ -1,4 +1,4 @@
-name: Deploy Discord Bot
+name: Deploy Bot-Server
 
 on:
   push:
@@ -37,8 +37,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/coordipai/discord-bot:latest
-            ghcr.io/coordipai/discord-bot:${{ github.sha }}
+            ghcr.io/coordipai/bot-server:latest
+            ghcr.io/coordipai/bot-server:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -50,10 +50,12 @@ jobs:
           key: ${{ secrets.REMOTE_SSH_KEY }}
           port: ${{ secrets.REMOTE_SSH_PORT }}
           script: |
-            cd /home/${{ secrets.REMOTE_SSH_USERNAME }}/Projects/discord-bot
+            cd /home/${{ secrets.REMOTE_SSH_USERNAME }}/Projects
+
+            echo "${{ secrets.ENV_FILE }}" > .env
 
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-            docker pull ghcr.io/coordipai/discord-bot:latest
+            docker pull ghcr.io/coordipai/bot-server:latest
 
-            docker compose up -d coordipai-discord-bot
+            docker compose up -d coordipai-bot-server
             docker image prune -f
