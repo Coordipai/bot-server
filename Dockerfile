@@ -16,6 +16,5 @@ COPY . .
 # 6. 포트 설정
 EXPOSE 3000
 
-# 7. 명령어 등록 및 서버 시작 (shell 형식 사용)
-SHELL ["/bin/sh", "-c"]
-CMD npm run register && npm start
+# 7. 서버 시작
+CMD ["npm", "start"]
