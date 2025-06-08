@@ -52,8 +52,6 @@ jobs:
           script: |
             cd /home/${{ secrets.REMOTE_SSH_USERNAME }}/Projects
 
-            echo "${{ secrets.ENV_FILE }}" > .env
-
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
             docker pull ghcr.io/coordipai/bot-server:latest
 
